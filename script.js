@@ -1,37 +1,104 @@
-const addButton=document.getElementById('add_button');
-const todoInput=document.getElementById('todo-input');
-const todoList=document.getElementById('todo-list');
+document.addEventListener("DOMContentLoaded", () => {
+    const addButton = document.getElementById("add_button");
+    const todoInput = document.getElementById("todo-input");
+    const todoList = document.getElementById("todo-list");
 
-addButton.addEventListener('clcik', addTodo);
-todoInput.addEventListener('keypress', function(e){
-    if (e.key === 'Enter'){
-        addTodo();
-    }
-})
+    // Add new task
+    addButton.addEventListener("click", () => {
+        const taskText = todoInput.value.trim();
+        if (taskText !== "") {
+            const li = createTodoItem(taskText);
+            todoList.appendChild(li);
+            todoInput.value = "";
+        }
+    });
 
-function addTodo(){
- const task = todoInput.value.trim();
+    // Allow pressing Enter to add task
+    todoInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            addButton.click();
+        }
+    });
 
- if(task === ''){   /* === checks both the data value and data type while == only checks data value */
-    alert("Please enter a task.");
-    return
- }
- const li= document.createElement('li');
- const span=document.createElement('span');
- console.log(li);
- span.textContent = task;
- span.addEventListener('click', function(){
-    li.classList.toggle('completed');
- })
+    // Make the list sortable (drag-and-drop)
+    makeListDraggable(todoList);
+});
 
- const deleteButton = document.createElement('button');
- deleteButton.textContent='Delete';
- deleteButton.addEventListener('click', function(){
-    todoList.removeChild(li);
- })
+// Create a single to-do item element
+function createTodoItem(text) {
+    const li = document.createElement("li");
+    li.draggable = true;
 
- li.appendChild(span);
- li.appendChild(deleteButton);
- todoList.appendChild(li);
- todoInput.value = '';
+    const span = document.createElement("span");
+    span.textContent = text;
+    span.classList.add("task-text");
+
+    // Toggle completed on click
+    span.addEventListener("click", () => {
+        span.classList.toggle("completed");
+    });
+
+    // Edit on double-click
+    span.addEventListener("dblclick", () => {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = span.textContent;
+        input.className = "edit-input";
+
+        input.addEventListener("blur", () => {
+            span.textContent = input.value.trim() || span.textContent;
+            span.style.display = "inline";
+            input.remove();
+        });
+
+        input.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                input.blur();
+            }
+        });
+
+        span.style.display = "none";
+        li.insertBefore(input, span);
+        input.focus();
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.className = "delete-button";
+    deleteBtn.addEventListener("click", () => {
+        li.remove();
+    });
+
+    li.appendChild(span);
+    li.appendChild(deleteBtn);
+    return li;
+}
+
+// Enable drag-and-drop reordering
+function makeListDraggable(list) {
+    let draggedItem = null;
+
+    list.addEventListener("dragstart", (e) => {
+        draggedItem = e.target;
+        e.dataTransfer.effectAllowed = "move";
+    });
+
+    list.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const target = e.target.closest("li");
+        if (target && target !== draggedItem) {
+            const bounding = target.getBoundingClientRect();
+            const offset = bounding.y + bounding.height / 2;
+            if (e.clientY - offset > 0) {
+                target.after(draggedItem);
+            } else {
+                target.before(draggedItem);
+            }
+        }
+    });
+
+    list.addEventListener("drop", (e) => {
+        e.preventDefault();
+        draggedItem = null;
+    });
 }
